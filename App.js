@@ -54,8 +54,9 @@ export default function App() {
   const [displayedValue, setDisplayedValue] = useState("");
   const [jsonData, setJsonData] = useState({ verses: [] });
   const [isModalVisible, setModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState("KJB1762");
   const [availableBibleVersions, setAvailableBibleVersions] = useState([]);
+  const [highlightedVerses, setHighlightedVerses] = useState([]);
 
 
   const handleDropdownChange = (itemValue) => {
@@ -67,7 +68,7 @@ export default function App() {
     console.log(availableBibleVersions)
     //getSearch(inputText)
   }
-  
+
   async function getSearch(query) {
     var verses = [];
     await books.forEach(async (book, i) => {
@@ -116,7 +117,7 @@ export default function App() {
 
   const loadFile = async () => {
     try {
-      const fileContents = await FileSystem.readAsStringAsync(`${FileSystem.documentDirectory}/BibleData/${selectedItem}/John/1.json`);
+      const fileContents = await FileSystem.readAsStringAsync(`${FileSystem.documentDirectory}/BibleData/${selectedItem}/John/11.json`);
       //Alert.alert("Data:", fileContents)
       setJsonData(JSON.parse(fileContents));
       //return jsonData;
@@ -130,14 +131,26 @@ export default function App() {
   useEffect(() => {
     const fetchBibleVersions = async () => {
       try {
-        const bibleData = await client.collection("bibleVersions").getFullList({sort:"language"});
+        const bibleData = await client.collection("bibleVersions").getFullList({ sort: "language" });
         setAvailableBibleVersions(bibleData);
+        try {
+          const highlightedData = (await client.collection("highlights").getFullList({ filter: `book_id="${"JHN"}" && chapter=${"11"} && user="${'6lahuzypm8m7d7b'}"` }))[0].verse_data;
+          setHighlightedVerses(highlightedData);
+        }
+        catch (err) {
+
+        }
       } catch (error) {
         console.error('Error fetching Bible versions:', error);
       }
     };
     fetchBibleVersions();
   }, []);
+
+  useEffect(() => {
+    // Call the function when 'selectedItem' changes
+    loadFile();
+  }, [selectedItem])
 
   return (
     <SafeAreaView style={styles.container}>
@@ -160,8 +173,18 @@ export default function App() {
           availableBibleVersions={availableBibleVersions}
         />
         <Text>{selectedItem}</Text>
-        {jsonData.verses.map(verse => (
-          <Text key={verse.verse} style={styles.textBible}><Text style={{ fontWeight: 'bold' }}>{verse.verse}</Text> {verse.text}</Text>
+        {jsonData.verses.map(bibleVerse => (
+          <View key={bibleVerse.verse}>
+            {highlightedVerses.some(({ verse }) => verse === bibleVerse.verse) ?
+              <View style={{ backgroundColor: highlightedVerses[highlightedVerses.findIndex(verse => verse.verse === bibleVerse.verse)].color, marginBottom: 5 }}>
+                <Text style={styles.textBible}><Text style={{ fontWeight: 'bold' }}>{bibleVerse.verse}</Text> {bibleVerse.text}</Text>
+              </View>
+              :
+              <View style={{ marginBottom: 5 }}>
+                <Text style={styles.textBible}><Text style={{ fontWeight: 'bold' }}>{bibleVerse.verse}</Text> {bibleVerse.text}</Text>
+              </View>
+            }
+          </View>
         ))}
       </ScrollView>
 
@@ -172,7 +195,7 @@ export default function App() {
       >
         <View style={{ flex: 1, paddingTop: 5, alignItems: 'center', width: '100%' }}>
           <ScrollView style={{ backgroundColor: 'white', width: '92%', marginBottom: 10 }}>
-            <BibleVersionButtonList availableBibleVersions={availableBibleVersions}/>
+            <BibleVersionButtonList availableBibleVersions={availableBibleVersions} />
           </ScrollView>
           <View style={{ width: '92%', paddingBottom: 5 }}>
             <Button onPress={toggleModal} title="Close" />
@@ -198,8 +221,7 @@ const styles = StyleSheet.create({
   },
   textBible: {
     fontSize: 20,
-    marginBottom: 10,
-  }
+  },
 });
 
 function compareVerses(verse1, verse2) {
