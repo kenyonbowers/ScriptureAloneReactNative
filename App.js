@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, StatusBar, SafeAreaView, TextInput, Button, Alert, Text, Modal, View } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import BibleVersionButtonList from './src/Bible/Components/BibleVersionButtonList'
 import BibleVersionDropdown from './src/Bible/Components/BibleVersionDropdown';
-import { availableBibleVersions } from './src/Bible/Services/BibleService';
+import PocketBase from 'pocketbase'
+
+const client = new PocketBase(process.env.EXPO_PUBLIC_POCKETBASE_URL);
 
 const bookOrder = {
   Genesis: 1,
@@ -53,16 +55,19 @@ export default function App() {
   const [jsonData, setJsonData] = useState({ verses: [] });
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [availableBibleVersions, setAvailableBibleVersions] = useState([]);
+
 
   const handleDropdownChange = (itemValue) => {
     setSelectedItem(itemValue);
   };
 
-  function handleButtonPress() {
-    Alert.alert('Text Input Value', inputText);
-    getSearch(inputText)
+  async function handleButtonPress() {
+    Alert.alert('Text Input Value', JSON.stringify(availableBibleVersions));
+    console.log(availableBibleVersions)
+    //getSearch(inputText)
   }
-
+  
   async function getSearch(query) {
     var verses = [];
     await books.forEach(async (book, i) => {
@@ -111,7 +116,7 @@ export default function App() {
 
   const loadFile = async () => {
     try {
-      const fileContents = await FileSystem.readAsStringAsync(FileSystem.documentDirectory + "/BibleData/MT1525/Genesis/1.json");
+      const fileContents = await FileSystem.readAsStringAsync(`${FileSystem.documentDirectory}/BibleData/${selectedItem}/John/1.json`);
       //Alert.alert("Data:", fileContents)
       setJsonData(JSON.parse(fileContents));
       //return jsonData;
@@ -121,6 +126,18 @@ export default function App() {
     }
   };
 
+
+  useEffect(() => {
+    const fetchBibleVersions = async () => {
+      try {
+        const bibleData = await client.collection("bibleVersions").getFullList({sort:"language"});
+        setAvailableBibleVersions(bibleData);
+      } catch (error) {
+        console.error('Error fetching Bible versions:', error);
+      }
+    };
+    fetchBibleVersions();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -154,8 +171,10 @@ export default function App() {
         animationType="slide" // or "fade" or "none"
       >
         <View style={{ flex: 1, paddingTop: 5, alignItems: 'center', width: '100%' }}>
-          <View style={{ backgroundColor: 'white', width: '92%' }}>
-            <BibleVersionButtonList />
+          <ScrollView style={{ backgroundColor: 'white', width: '92%', marginBottom: 10 }}>
+            <BibleVersionButtonList availableBibleVersions={availableBibleVersions}/>
+          </ScrollView>
+          <View style={{ width: '92%', paddingBottom: 5 }}>
             <Button onPress={toggleModal} title="Close" />
           </View>
         </View>

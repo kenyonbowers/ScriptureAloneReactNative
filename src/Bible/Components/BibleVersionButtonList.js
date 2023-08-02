@@ -1,13 +1,14 @@
 import React from 'react';
-import { Button, View, StyleSheet } from 'react-native';
+import { Button, View, StyleSheet, Text } from 'react-native';
 import * as FileSystem from 'expo-file-system';
-import { books, oldTestamentBooks, newTestamentBooks, avalibleBibleVersions } from '../Services/BibleService';
+import { books, oldTestamentBooks, newTestamentBooks } from '../Services/BibleService';
 
-const BibleVersionButtonList = () => {
+const BibleVersionButtonList = ({ availableBibleVersions }) => {
     return (
         <>
-            {avalibleBibleVersions.map((version) => (
+            {availableBibleVersions.map((version, i) => (
                 <View key={version.value} style={{ marginBottom: 5 }}>
+                    {i == 0 || availableBibleVersions[Math.max(0, i-1)].language != version.language ? <Text>{version.language}</Text> : <></>}
                     <Button style={styles.button} title={version.label} onPress={value => downloadBibleVersion(version.value)} />
                 </View>
             ))}
@@ -34,10 +35,10 @@ const downloadBibleVersion = async (version) => {
         await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}/BibleData/${version}`, { intermediates: true });
         await books.forEach(async (book) => {
             var bookIncludedInVersion = false;
-            if (avalibleBibleVersions.some(({ value, ot }) => value === version && ot === true && oldTestamentBooks.includes(book[0])))
+            if (availableBibleVersions.some(({ value, ot }) => value === version && ot === true && oldTestamentBooks.includes(book[0])))
                 bookIncludedInVersion = true;
             else {
-                if (avalibleBibleVersions.some(({ value, nt }) => value === version && nt === true && newTestamentBooks.includes(book[0]))) 
+                if (availableBibleVersions.some(({ value, nt }) => value === version && nt === true && newTestamentBooks.includes(book[0]))) 
                     bookIncludedInVersion = true;
                 else
                     bookIncludedInVersion = false;
