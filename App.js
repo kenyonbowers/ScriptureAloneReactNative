@@ -148,6 +148,7 @@ export default function App() {
     };
     fetchBibleVersions();
     loadFile();
+    Alert.alert("ENV", process.env)
   }, []);
 
   useEffect(() => {
