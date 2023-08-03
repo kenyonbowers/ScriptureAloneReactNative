@@ -33,7 +33,7 @@ const BibleVersionButtonList = ({ availableBibleVersions }) => {
 
                             // Use the fileUri as needed, for example, to display or read the file
                         } else {
-                            console.error('Failed to download the file. Status code:', downloadResult.status);
+                            console.error('Failed to download the file. Status code:', downloadUrl);
                         }
                     };
                 }
