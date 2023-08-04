@@ -5,7 +5,6 @@ import BibleVersionButtonList from './src/Bible/Components/BibleVersionButtonLis
 import BibleVersionDropdown from './src/Bible/Components/BibleVersionDropdown';
 import PocketBase from 'pocketbase'
 import { oldTestamentBooks, newTestamentBooks } from './src/Bible/Services/BibleService';
-import HTML from 'react-native-render-html';
 
 const client = new PocketBase(process.env.EXPO_PUBLIC_POCKETBASE_URL);
 
@@ -118,14 +117,16 @@ export default function App() {
   };
 
   const loadFile = async () => {
-    try {
-      const fileContents = await FileSystem.readAsStringAsync(`${FileSystem.documentDirectory}/BibleData/${versionSelect}/JHN/3.json`);
-      //Alert.alert("Data:", fileContents)
-      setJsonData(JSON.parse(fileContents));
-      //return jsonData;
-    } catch (error) {
-      console.error('Error loading JSON file:', error);
-      return null;
+    if ((await FileSystem.getInfoAsync(`${FileSystem.documentDirectory}/BibleData/${versionSelect}`)).exists) {
+      try {
+        const fileContents = await FileSystem.readAsStringAsync(`${FileSystem.documentDirectory}/BibleData/${versionSelect}/JHN/3.json`);
+        //Alert.alert("Data:", fileContents)
+        setJsonData(JSON.parse(fileContents));
+        //return jsonData;
+      } catch (error) {
+        console.error('Error loading JSON file:', error);
+        return null;
+      }
     }
   };
 
@@ -148,7 +149,7 @@ export default function App() {
     };
     fetchBibleVersions();
     loadFile();
-    Alert.alert("ENV", process.env)
+    //Alert.alert("ENV", process.env)
   }, []);
 
   useEffect(() => {
@@ -185,7 +186,7 @@ export default function App() {
                 {bibleVerse.text.map((word, i) => (
                   <Text key={i}>
                     {word.includes("*") && word.includes("|") ?
-                      <Text style={{ fontStyle: 'italic', color: 'red' }}>{word.replace("*", "").replace("|","")} </Text>
+                      <Text style={{ fontStyle: 'italic', color: 'red' }}>{word.replace("*", "").replace("|", "")} </Text>
                       :
                       <>
                         {word.includes("*") ?
@@ -193,7 +194,7 @@ export default function App() {
                           :
                           <>
                             {word.includes("|") ?
-                              <Text style={{color:'red'}}>{word.replace("|","")} </Text>
+                              <Text style={{ color: 'red' }}>{word.replace("|", "")} </Text>
                               :
                               <Text>{word} </Text>
                             }
